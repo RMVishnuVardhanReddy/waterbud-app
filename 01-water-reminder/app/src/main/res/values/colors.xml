@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="aqua">#2E9BDE</color>
+    <color name="aqua_dark">#1C6FA6</color>
+    <color name="bg">#F4FAFE</color>
+    <color name="white">#FFFFFF</color>
+    <color name="ic_launcher_background">#2E9BDE</color>
+</resources>
