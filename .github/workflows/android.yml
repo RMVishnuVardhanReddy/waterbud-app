@@ -9,50 +9,87 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  app:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # ubuntu-latest ships the Android SDK preinstalled; AGP auto-downloads any
-      # missing platform/build-tools (licenses are pre-accepted on the image).
-
-      - name: Build debug APK (Waterbud phone app)
+      - name: Unit tests + debug APK
         id: build
         working-directory: 01-water-reminder
         run: |
           set -o pipefail
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
 
-      - name: Report build log to commit (so the author can read it)
+      - name: Report log to commit
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           {
-            echo '### Android CI — ${{ steps.build.outcome }}'
-            echo ''
-            echo '#### Compile errors'
+            echo "### app job — ${{ steps.build.outcome }}"
+            echo '#### Errors / test failures'
             echo '```'
-            grep -nE "^e: |^w: |: error:|error: |Unresolved reference|cannot access|None of the following|too many|conflicting|overload" /tmp/build.log 2>/dev/null | head -120 || echo '(no matches)'
+            grep -nE "^e: |: error:|error: |Unresolved reference|FAILED|Tests? failed|expected:|AssertionError" /tmp/build.log 2>/dev/null | head -120 || echo '(none)'
             echo '```'
             echo '#### Tail'
             echo '```'
-            tail -n 40 /tmp/build.log 2>/dev/null || echo '(no build log)'
+            tail -n 30 /tmp/build.log 2>/dev/null
             echo '```'
           } > /tmp/body.md
           gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments -F body=@/tmp/body.md || true
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
         if: success()
+        uses: actions/upload-artifact@v4
         with:
           name: waterbud-debug-apk
           path: 01-water-reminder/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
+  wear:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build Wear debug APK
+        id: wearbuild
+        working-directory: 01-water-reminder
+        run: |
+          set -o pipefail
+          ./gradlew :wear:assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/wear.log
+
+      - name: Report wear log to commit
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### wear job — ${{ steps.wearbuild.outcome }}"
+            echo '```'
+            grep -nE "^e: |: error:|error: |Unresolved reference|FAILED|requires|minimum" /tmp/wear.log 2>/dev/null | head -80 || echo '(none)'
+            echo '```'
+            echo '#### Tail'
+            echo '```'
+            tail -n 25 /tmp/wear.log 2>/dev/null
+            echo '```'
+          } > /tmp/wbody.md
+          gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments -F body=@/tmp/wbody.md || true
+
+      - name: Upload Wear APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: waterbud-wear-debug-apk
+          path: 01-water-reminder/wear/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
