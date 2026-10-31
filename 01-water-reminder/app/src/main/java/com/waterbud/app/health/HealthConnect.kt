@@ -5,6 +5,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HydrationRecord
+import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.units.Volume
 import java.time.Instant
 import java.time.ZoneId
@@ -52,7 +53,8 @@ object HealthConnect {
                         startZoneOffset = offset,
                         endTime = end,
                         endZoneOffset = offset,
-                        volume = Volume.milliliters(volumeMl.toDouble())
+                        volume = Volume.milliliters(volumeMl.toDouble()),
+                        metadata = Metadata.manualEntry()
                     )
                 )
             )
