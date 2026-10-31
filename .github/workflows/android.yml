@@ -17,12 +17,29 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # ubuntu-latest ships the Android SDK preinstalled; AGP auto-downloads any
+      # missing platform/build-tools (licenses are pre-accepted on the image).
 
       - name: Build debug APK (Waterbud phone app)
+        id: build
         working-directory: 01-water-reminder
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+
+      - name: Report build log to commit (so the author can read it)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '### Android CI — ${{ steps.build.outcome }}'
+            echo ''
+            echo '```'
+            tail -n 250 /tmp/build.log 2>/dev/null || echo '(no build log captured)'
+            echo '```'
+          } > /tmp/body.md
+          gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments -F body=@/tmp/body.md || true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
