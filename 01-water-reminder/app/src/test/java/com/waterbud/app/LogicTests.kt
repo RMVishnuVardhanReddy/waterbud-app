@@ -4,7 +4,9 @@ import com.waterbud.app.data.Achievements
 import com.waterbud.app.data.DayTotal
 import com.waterbud.app.data.DrinkTypes
 import com.waterbud.app.data.GoalCalculator
+import com.waterbud.app.data.UserPrefs
 import com.waterbud.app.reminder.ReminderScheduler
+import java.util.Calendar
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -53,6 +55,33 @@ class QuietHoursTest {
         assertTrue(ReminderScheduler.isQuiet(13, 9, 17))
         assertFalse(ReminderScheduler.isQuiet(17, 9, 17))
         assertFalse(ReminderScheduler.isQuiet(8, 9, 17))
+    }
+
+    @Test fun nextTrigger_rollsPastQuietHoursToMorning() {
+        // At 23:00, +90 min lands at 00:30 (inside 22:00–07:00 quiet) → push to 07:00.
+        val prefs = UserPrefs(intervalMinutes = 90, quietStartHour = 22, quietEndHour = 7)
+        val now = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 23); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0)
+        }
+        val next = Calendar.getInstance().apply {
+            timeInMillis = ReminderScheduler.nextTriggerMillis(prefs, now.timeInMillis)
+        }
+        assertEquals(7, next.get(Calendar.HOUR_OF_DAY))
+        assertEquals(0, next.get(Calendar.MINUTE))
+        assertTrue("next trigger must be in the future", next.timeInMillis > now.timeInMillis)
+    }
+
+    @Test fun nextTrigger_withinActiveHoursKeepsInterval() {
+        // At 13:00, +90 min = 14:30, not quiet → unchanged.
+        val prefs = UserPrefs(intervalMinutes = 90, quietStartHour = 22, quietEndHour = 7)
+        val now = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 13); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0)
+        }
+        val next = Calendar.getInstance().apply {
+            timeInMillis = ReminderScheduler.nextTriggerMillis(prefs, now.timeInMillis)
+        }
+        assertEquals(14, next.get(Calendar.HOUR_OF_DAY))
+        assertEquals(30, next.get(Calendar.MINUTE))
     }
 }
 

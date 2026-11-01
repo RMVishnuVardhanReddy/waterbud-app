@@ -6,6 +6,7 @@ import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HydrationRecord
 import androidx.health.connect.client.records.metadata.Metadata
+import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Volume
 import java.time.Instant
 import java.time.ZoneId
@@ -57,6 +58,22 @@ object HealthConnect {
                         metadata = Metadata.manualEntry()
                     )
                 )
+            )
+        }
+    }
+
+    /**
+     * Deletes the hydration record written at [timeMillis] (matches writeHydration's
+     * 1-second window). Best-effort; no-ops without availability/permission.
+     */
+    suspend fun deleteHydrationAt(context: Context, timeMillis: Long) {
+        val c = client(context) ?: return
+        if (!hasPermission(context)) return
+        runCatching {
+            val start = Instant.ofEpochMilli(timeMillis)
+            c.deleteRecords(
+                HydrationRecord::class,
+                TimeRangeFilter.between(start, start.plusSeconds(1))
             )
         }
     }

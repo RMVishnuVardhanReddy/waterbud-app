@@ -2,7 +2,9 @@ package com.waterbud.app.ui.onboarding
 
 import android.app.Application
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.WaterDrop
@@ -40,7 +42,9 @@ fun OnboardingScreen(onDone: () -> Unit, vm: OnboardingViewModel = viewModel()) 
     val goal = remember(weight, activity) { GoalCalculator.recommendedMl(weight, activity) }
 
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
+        Modifier.fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(32.dp))
@@ -94,7 +98,7 @@ fun OnboardingScreen(onDone: () -> Unit, vm: OnboardingViewModel = viewModel()) 
             textAlign = TextAlign.Center
         )
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(28.dp))
         Button(
             onClick = { vm.finish(weight, activity, onDone) },
             modifier = Modifier.fillMaxWidth().height(54.dp),

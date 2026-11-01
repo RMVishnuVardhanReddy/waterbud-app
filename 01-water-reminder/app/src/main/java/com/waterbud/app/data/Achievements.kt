@@ -1,8 +1,5 @@
 package com.waterbud.app.data
 
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-
 data class Achievement(
     val id: String,
     val emoji: String,
@@ -16,20 +13,22 @@ data class Achievement(
 /**
  * Pure, testable achievement logic. Everything is derived from the local log
  * data, so badges are free, offline, and shareable — a cheap retention loop.
+ *
+ * Uses the shared [Streaks] rule for "met days" so badges and the streak card agree.
  */
 object Achievements {
-
-    private val fmt: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     fun evaluate(
         dailyTotals: List<DayTotal>,
         goalMl: Int,
         logCount: Int,
-        totalVolumeMl: Int
+        totalVolumeMl: Int,
+        todayKey: String = "",
+        effectiveGoalToday: Int = goalMl
     ): List<Achievement> {
-        val metDays = dailyTotals.filter { goalMl > 0 && it.totalHydration >= goalMl }.map { it.dayKey }
+        val metDays = Streaks.metDayKeys(dailyTotals, goalMl, todayKey, effectiveGoalToday)
         val daysGoalMet = metDays.size
-        val bestStreak = longestConsecutive(metDays)
+        val bestStreak = Streaks.longest(metDays)
 
         fun ratio(value: Int, target: Int) = (value.toFloat() / target).coerceIn(0f, 1f)
 
@@ -54,18 +53,4 @@ object Achievements {
     private fun badge(
         id: String, emoji: String, title: String, desc: String, earned: Boolean, progress: Float
     ) = Achievement(id, emoji, title, desc, earned, if (earned) 1f else progress)
-
-    /** Longest run of consecutive calendar days among the given day keys. */
-    private fun longestConsecutive(dayKeys: List<String>): Int {
-        if (dayKeys.isEmpty()) return 0
-        val dates = dayKeys.mapNotNull { runCatching { LocalDate.parse(it, fmt) }.getOrNull() }.sorted()
-        if (dates.isEmpty()) return 0
-        var best = 1
-        var run = 1
-        for (i in 1 until dates.size) {
-            run = if (dates[i - 1].plusDays(1) == dates[i]) run + 1 else 1
-            if (run > best) best = run
-        }
-        return best
-    }
 }

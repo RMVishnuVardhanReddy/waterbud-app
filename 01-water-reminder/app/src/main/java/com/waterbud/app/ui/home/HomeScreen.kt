@@ -143,7 +143,9 @@ fun HomeScreen(
             onConfirm = { ml, type ->
                 vm.addDrink(ml, type)
                 showCustom = false
-                scope.launch { snackbar.showSnackbar("+$ml ml") }
+                val counts = Math.round(ml * DrinkTypes.coefficient(type)).toInt()
+                val msg = if (counts != ml) "+$ml ml ${DrinkTypes.label(type)} · counts $counts ml" else "+$ml ml"
+                scope.launch { snackbar.showSnackbar(msg) }
             }
         )
     }
@@ -204,7 +206,9 @@ private fun LogRow(log: WaterLog, onDelete: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text("${log.amountMl} ml · ${DrinkTypes.label(log.drinkType)}",
                 fontWeight = FontWeight.Medium)
-            Text(time, style = MaterialTheme.typography.bodySmall,
+            // Explain the gap when a drink counts for less than its volume (e.g. coffee).
+            val sub = if (log.hydrationMl != log.amountMl) "$time · counts ${log.hydrationMl} ml" else time
+            Text(sub, style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         IconButton(onClick = onDelete) {

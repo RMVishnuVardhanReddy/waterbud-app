@@ -74,13 +74,14 @@ object AdManager {
         if (now - cap.lastShownMs() < MIN_GAP_MS) return
 
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            // Count a slot only when the ad actually displays, not when a show fails.
+            override fun onAdShowedFullScreenContent() { cap.record(System.currentTimeMillis()) }
             override fun onAdDismissedFullScreenContent() {
                 interstitial = null
                 preloadInterstitial(activity)
             }
             override fun onAdFailedToShowFullScreenContent(e: AdError) { interstitial = null }
         }
-        cap.record(now)
         ad.show(activity)
     }
 

@@ -98,12 +98,11 @@ fun SettingsScreen(
             SectionTitle("Daily goal")
             Card(shape = RoundedCornerShape(16.dp)) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("${s.goalMl} ml", style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold)
-                    Slider(
-                        value = s.goalMl.toFloat(),
-                        onValueChange = { vm.setGoal((it / 50).toInt() * 50) },
-                        valueRange = 1000f..5000f
+                    LabeledCommitSlider(
+                        current = s.goalMl, range = 1000f..5000f, step = 50,
+                        label = { g -> Text("$g ml", style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold) },
+                        onCommit = { vm.setGoal(it) }
                     )
                     Text("Tip: recommended is ~35 ml per kg of body weight.",
                         style = MaterialTheme.typography.bodySmall,
@@ -158,33 +157,33 @@ fun SettingsScreen(
             Card(shape = RoundedCornerShape(16.dp)) {
                 Column(Modifier.padding(horizontal = 16.dp)) {
                     SwitchRow("Enable reminders", s.remindersEnabled, vm::setRemindersEnabled)
+                    NotificationWarning(context)
                     HorizontalDivider()
                     Column(Modifier.padding(vertical = 12.dp)) {
-                        Text("Reminder interval: every ${s.intervalMinutes} min")
-                        Slider(
-                            value = s.intervalMinutes.toFloat(),
-                            onValueChange = { vm.setInterval((it / 15).toInt() * 15) },
-                            valueRange = 30f..240f, enabled = s.remindersEnabled
+                        LabeledCommitSlider(
+                            current = s.intervalMinutes, range = 30f..240f, step = 15,
+                            enabled = s.remindersEnabled,
+                            label = { m -> Text("Reminder interval: every $m min") },
+                            onCommit = { vm.setInterval(it) }
                         )
                     }
                     HorizontalDivider()
                     Column(Modifier.padding(vertical = 12.dp)) {
-                        Text("Quiet hours: ${two(s.quietStartHour)}:00 – ${two(s.quietEndHour)}:00")
                         Text("No reminders while you sleep. Reminders respect Do Not Disturb.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(8.dp))
-                        Text("Start: ${two(s.quietStartHour)}:00")
-                        Slider(
-                            value = s.quietStartHour.toFloat(),
-                            onValueChange = { vm.setQuietHours(it.toInt(), s.quietEndHour) },
-                            valueRange = 18f..23f, enabled = s.remindersEnabled
+                        LabeledCommitSlider(
+                            current = s.quietStartHour, range = 18f..23f, step = 1,
+                            enabled = s.remindersEnabled,
+                            label = { h -> Text("Quiet start: ${two(h)}:00") },
+                            onCommit = { vm.setQuietHours(it, s.quietEndHour) }
                         )
-                        Text("End: ${two(s.quietEndHour)}:00")
-                        Slider(
-                            value = s.quietEndHour.toFloat(),
-                            onValueChange = { vm.setQuietHours(s.quietStartHour, it.toInt()) },
-                            valueRange = 5f..10f, enabled = s.remindersEnabled
+                        LabeledCommitSlider(
+                            current = s.quietEndHour, range = 5f..10f, step = 1,
+                            enabled = s.remindersEnabled,
+                            label = { h -> Text("Quiet end: ${two(h)}:00") },
+                            onCommit = { vm.setQuietHours(s.quietStartHour, it) }
                         )
                     }
                     HorizontalDivider()
@@ -240,17 +239,18 @@ fun SettingsScreen(
                     }
                     if (s.weekendDifferent) {
                         Column(Modifier.padding(bottom = 12.dp)) {
-                            Text("Weekend quiet: ${two(s.weekendQuietStartHour)}:00 – ${two(s.weekendQuietEndHour)}:00",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("Start: ${two(s.weekendQuietStartHour)}:00")
-                            Slider(value = s.weekendQuietStartHour.toFloat(),
-                                onValueChange = { vm.setWeekendQuietHours(it.toInt(), s.weekendQuietEndHour) },
-                                valueRange = 18f..23f, enabled = s.remindersEnabled)
-                            Text("End: ${two(s.weekendQuietEndHour)}:00")
-                            Slider(value = s.weekendQuietEndHour.toFloat(),
-                                onValueChange = { vm.setWeekendQuietHours(s.weekendQuietStartHour, it.toInt()) },
-                                valueRange = 6f..12f, enabled = s.remindersEnabled)
+                            LabeledCommitSlider(
+                                current = s.weekendQuietStartHour, range = 18f..23f, step = 1,
+                                enabled = s.remindersEnabled,
+                                label = { h -> Text("Weekend quiet start: ${two(h)}:00") },
+                                onCommit = { vm.setWeekendQuietHours(it, s.weekendQuietEndHour) }
+                            )
+                            LabeledCommitSlider(
+                                current = s.weekendQuietEndHour, range = 6f..12f, step = 1,
+                                enabled = s.remindersEnabled,
+                                label = { h -> Text("Weekend quiet end: ${two(h)}:00") },
+                                onCommit = { vm.setWeekendQuietHours(s.weekendQuietStartHour, it) }
+                            )
                         }
                     }
                 }
@@ -305,7 +305,7 @@ fun SettingsScreen(
                                     onWatchRewardedForThemes { ok ->
                                         scope.launch {
                                             snackbar.showSnackbar(
-                                                if (ok) "Themes unlocked for today 🎉" else "No ad available right now"
+                                                if (ok) "Themes unlocked for 7 days 🎉" else "No ad available right now"
                                             )
                                         }
                                     }
@@ -421,6 +421,47 @@ private fun AddCupDialog(onDismiss: () -> Unit, onConfirm: (String, Int) -> Unit
         },
         confirmButton = { TextButton(enabled = ml in 1..5000, onClick = { onConfirm(label, ml) }) { Text("Add") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+/** Slider that updates its caption live but only COMMITS (and reschedules) on release. */
+@Composable private fun LabeledCommitSlider(
+    current: Int,
+    range: ClosedFloatingPointRange<Float>,
+    step: Int,
+    enabled: Boolean = true,
+    label: @Composable (Int) -> Unit,
+    onCommit: (Int) -> Unit
+) {
+    var local by remember(current) { mutableIntStateOf(current) }
+    label(local)
+    Slider(
+        value = local.toFloat(),
+        onValueChange = { local = (it / step).toInt() * step },
+        onValueChangeFinished = { onCommit(local) },
+        valueRange = range,
+        enabled = enabled
+    )
+}
+
+/** Shown when notifications are blocked, so reminders don't fail silently. */
+@Composable private fun NotificationWarning(context: android.content.Context) {
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) return
+    val granted = ContextCompat.checkSelfPermission(
+        context, android.Manifest.permission.POST_NOTIFICATIONS
+    ) == PackageManager.PERMISSION_GRANTED
+    if (granted) return
+    Text(
+        "⚠ Notifications are off — reminders won't appear. Tap to turn them on.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.fillMaxWidth().clickable {
+            context.startActivity(
+                Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }.padding(vertical = 8.dp)
     )
 }
 

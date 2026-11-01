@@ -10,8 +10,10 @@ import com.waterbud.app.data.WaterLog
 import com.waterbud.app.data.WaterRepository
 import com.waterbud.app.reminder.ReminderScheduler
 import com.waterbud.app.widget.WaterWidgetProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -35,15 +37,17 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repo = WaterRepository(app)
     private val prefs = PrefsRepository(app)
-    private val today = Dates.todayKey()
 
-    val uiState = combine(
-        repo.totalForDay(today),
-        prefs.prefs,
-        repo.cups(),
-        repo.logsForDay(today)
-    ) { total, p, cups, logs ->
-        HomeUiState(total, p.effectiveGoalMl, p.isPremium, cups, logs, p.weatherBonusMl)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val uiState = Dates.dayKeyTicker().flatMapLatest { today ->
+        combine(
+            repo.totalForDay(today),
+            prefs.prefs,
+            repo.cups(),
+            repo.logsForDay(today)
+        ) { total, p, cups, logs ->
+            HomeUiState(total, p.effectiveGoalMl, p.isPremium, cups, logs, p.weatherBonusMl)
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
     fun addDrink(amountMl: Int, type: String = "water") = viewModelScope.launch {

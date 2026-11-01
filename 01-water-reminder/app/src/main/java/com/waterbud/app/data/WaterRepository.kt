@@ -30,15 +30,23 @@ class WaterRepository(context: Context) {
                 drinkType = drinkType
             )
         )
-        // Best-effort mirror to Health Connect when the user has enabled sync.
+        // Mirror the HYDRATION value (not raw volume) to Health Connect so the number
+        // matches the app, when the user has enabled sync. Best-effort.
         if (PrefsRepository(appContext).prefs.first().healthSyncEnabled) {
-            HealthConnect.writeHydration(appContext, amountMl, now)
+            HealthConnect.writeHydration(appContext, hydration, now)
         }
         // Keep any paired watch in sync (best-effort, no-op if none).
         com.waterbud.app.wear.WearSync.pushToday(appContext)
     }
 
-    suspend fun undo(log: WaterLog) = dao.deleteLog(log)
+    suspend fun undo(log: WaterLog) {
+        dao.deleteLog(log)
+        // Reverse the same side-effects addDrink created, so HC and the watch stay correct.
+        if (PrefsRepository(appContext).prefs.first().healthSyncEnabled) {
+            HealthConnect.deleteHydrationAt(appContext, log.timestamp)
+        }
+        com.waterbud.app.wear.WearSync.pushToday(appContext)
+    }
 
     suspend fun allLogs() = dao.allLogs()
     fun allDailyTotals() = dao.allDailyTotals()

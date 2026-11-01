@@ -54,8 +54,9 @@ class BillingManager(
         }
     }
 
-    fun launchPurchase(activity: Activity) {
-        val details = premiumDetails ?: return
+    /** Returns false if the product isn't available yet (so the caller can tell the user). */
+    fun launchPurchase(activity: Activity): Boolean {
+        val details = premiumDetails ?: return false
         val params = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(
                 listOf(
@@ -64,6 +65,7 @@ class BillingManager(
                 )
             ).build()
         client.launchBillingFlow(activity, params)
+        return true
     }
 
     private fun queryExistingPurchases() {

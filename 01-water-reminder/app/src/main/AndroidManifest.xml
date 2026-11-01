@@ -18,6 +18,11 @@
     <!-- Optional: let reminders break through Do Not Disturb (user opt-in, access granted in Settings) -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
+    <!-- Health Connect package visibility (so getSdkStatus resolves on Android 11-13) -->
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
+
     <application
         android:name=".WaterbudApp"
         android:allowBackup="true"

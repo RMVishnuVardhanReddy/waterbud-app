@@ -57,6 +57,21 @@ object DrinkTypes {
 object Dates {
     private val fmt: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     fun todayKey(): String = LocalDate.now().format(fmt)
+
+    /**
+     * Emits today's key now and again whenever the calendar day changes (checked
+     * each minute). ViewModels key their flows on this so an app left open across
+     * midnight switches to the new day without a restart.
+     */
+    fun dayKeyTicker(): kotlinx.coroutines.flow.Flow<String> =
+        kotlinx.coroutines.flow.flow {
+            var last = ""
+            while (true) {
+                val key = todayKey()
+                if (key != last) { last = key; emit(key) }
+                kotlinx.coroutines.delay(60_000L)
+            }
+        }
     fun key(date: LocalDate): String = date.format(fmt)
     fun lastNDays(n: Int): List<LocalDate> {
         val today = LocalDate.now()

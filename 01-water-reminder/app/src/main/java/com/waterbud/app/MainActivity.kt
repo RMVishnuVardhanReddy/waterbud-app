@@ -81,7 +81,15 @@ class MainActivity : ComponentActivity() {
                     } else {
                         AppNav(
                             startOnboarding = !p.onboarded,
-                            onUpgrade = { if (!p.isPremium) billing.launchPurchase(this) },
+                            onUpgrade = {
+                                if (!p.isPremium && !billing.launchPurchase(this)) {
+                                    android.widget.Toast.makeText(
+                                        this,
+                                        "Premium isn't available yet — set up the product in Play Console.",
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            },
                             // Natural-break interstitial, frequency-capped; no-op if premium.
                             onLeaveDetail = { if (!p.isPremium) AdManager.maybeShowAtBreak(this) },
                             onWatchRewardedForThemes = { onDone ->
@@ -89,7 +97,10 @@ class MainActivity : ComponentActivity() {
                                     this,
                                     onReward = {
                                         lifecycleScope.launch {
-                                            prefsRepo.setRewardThemesUntil(Dates.endOfTodayMillis())
+                                            // One ad unlocks premium themes for 7 days (not just today),
+                                            // so people aren't nagged into watching an ad daily.
+                                            val sevenDays = System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000
+                                            prefsRepo.setRewardThemesUntil(sevenDays)
                                             onDone(true)
                                         }
                                     },

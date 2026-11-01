@@ -19,7 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.pluralStringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.waterbud.app.R
 import com.waterbud.app.ads.BannerAd
 import com.waterbud.app.data.Achievement
 
@@ -27,7 +29,7 @@ import com.waterbud.app.data.Achievement
 @Composable
 fun HistoryScreen(onBack: () -> Unit, vm: HistoryViewModel = viewModel()) {
     val state by vm.uiState.collectAsStateWithLifecycle()
-    val achievements by vm.achievements.collectAsStateWithLifecycle()
+    val achievements = state.achievements
 
     Scaffold(
         topBar = {
@@ -52,7 +54,7 @@ fun HistoryScreen(onBack: () -> Unit, vm: HistoryViewModel = viewModel()) {
                 StatCard(
                     modifier = Modifier.weight(1f),
                     title = "Current streak",
-                    value = "${state.currentStreak} days",
+                    value = pluralStringResource(R.plurals.days, state.currentStreak, state.currentStreak),
                     icon = { Icon(Icons.Default.LocalFireDepartment, null, tint = MaterialTheme.colorScheme.primary) }
                 )
                 StatCard(

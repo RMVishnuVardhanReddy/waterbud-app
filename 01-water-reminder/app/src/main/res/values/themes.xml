@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base theme; Compose drives the real colors at runtime. -->
-    <style name="Theme.Waterbud" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">@color/aqua</item>
+    <!-- Material3 base so Compose's setContent gets a valid content frame
+         (a bare android:Theme.Material base left android.R.id.content null on
+         some devices and crashed at launch). Compose drives real colors at runtime. -->
+    <style name="Theme.Waterbud" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/bg</item>
     </style>
 </resources>
