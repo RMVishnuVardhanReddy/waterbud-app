@@ -50,6 +50,7 @@ fun SettingsScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showAddCup by remember { mutableStateOf(false) }
+    var showRestoreConfirm by remember { mutableStateOf(false) }
 
     val locationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -384,7 +385,7 @@ fun SettingsScreen(
                 }
                 HorizontalDivider()
                 DataActionRow("Restore from a file", "Replace current data with a chosen backup.") {
-                    restoreLauncher.launch(arrayOf("application/json"))
+                    showRestoreConfirm = true
                 }
             }
             Spacer(Modifier.height(24.dp))
@@ -395,6 +396,21 @@ fun SettingsScreen(
         AddCupDialog(
             onDismiss = { showAddCup = false },
             onConfirm = { label, ml -> vm.addCup(label, ml); showAddCup = false }
+        )
+    }
+
+    if (showRestoreConfirm) {
+        AlertDialog(
+            onDismissRequest = { showRestoreConfirm = false },
+            title = { Text("Restore from backup?") },
+            text = { Text("This replaces ALL your current cups, logs and settings with the chosen backup file. This can't be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRestoreConfirm = false
+                    restoreLauncher.launch(arrayOf("application/json"))
+                }) { Text("Choose file") }
+            },
+            dismissButton = { TextButton(onClick = { showRestoreConfirm = false }) { Text("Cancel") } }
         )
     }
 }

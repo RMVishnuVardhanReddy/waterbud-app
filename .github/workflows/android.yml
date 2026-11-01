@@ -52,6 +52,40 @@ jobs:
           path: 01-water-reminder/app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
 
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build release APK (runs R8/shrinker — catches missing keep rules)
+        id: rel
+        working-directory: 01-water-reminder
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/rel.log
+
+      - name: Report release log to commit
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### release (R8) job — ${{ steps.rel.outcome }}"
+            echo '```'
+            grep -nE "^e: |: error:|error: |Unresolved|Missing class|R8|shrink|FAILED" /tmp/rel.log 2>/dev/null | head -100 || echo '(none)'
+            echo '```'
+            echo '#### Tail'
+            echo '```'
+            tail -n 30 /tmp/rel.log 2>/dev/null
+            echo '```'
+          } > /tmp/rbody.md
+          gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments -F body=@/tmp/rbody.md || true
+
   wear:
     runs-on: ubuntu-latest
     steps:
