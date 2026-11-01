@@ -35,11 +35,14 @@ object AdManager {
     private const val MAX_INTERSTITIALS_PER_DAY = 3
     private const val MIN_GAP_MS = 3 * 60 * 1000L      // ≥ 3 minutes between interstitials
     private const val GRACE_AFTER_LAUNCH_MS = 90 * 1000L // no interstitial in first 90s
+    private const val MIN_BREAKS_BEFORE_AD = 3 // first 2 returns home are always ad-free
 
     private var interstitial: InterstitialAd? = null
     private var rewarded: RewardedAd? = null
     @Volatile private var initialized = false
     private val sessionStart = System.currentTimeMillis()
+    /** How many times the user has returned Home from a detail screen this session. */
+    private var breakCount = 0
 
     fun init(context: Context) {
         if (initialized) return
@@ -65,6 +68,11 @@ object AdManager {
      * It self-limits via the frequency cap; most transitions will NOT show an ad.
      */
     fun maybeShowAtBreak(activity: Activity) {
+        // Count every return Home; the first two of the session are always ad-free, so
+        // simply checking your streak/total is never interrupted.
+        breakCount++
+        if (breakCount < MIN_BREAKS_BEFORE_AD) return
+
         val ad = interstitial ?: return
         val cap = AdFrequency(activity)
         val now = System.currentTimeMillis()
