@@ -517,7 +517,7 @@ private fun AddCupDialog(onDismiss: () -> Unit, onConfirm: (String, Int) -> Unit
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("Go Premium", fontWeight = FontWeight.Bold)
-                Text("Remove ads · all themes · data export · cloud backup",
+                Text("Remove ads · all themes (AMOLED) · export your data (CSV)",
                     style = MaterialTheme.typography.bodySmall)
             }
         }
