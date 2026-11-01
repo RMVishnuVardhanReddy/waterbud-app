@@ -28,9 +28,9 @@ no data loss on update, personalized goals. See the table in `_docs/STRATEGY.md`
 An interactive preview of Waterbud's four screens was published as a Claude artifact
 (link is in the chat). `_docs/hydro-ui-preview.html` is the source.
 
-## 📖 Step-by-step build & publish guide
-New to Android? Follow **[`_docs/BUILD_AND_PUBLISH.md`](_docs/BUILD_AND_PUBLISH.md)** — it takes you from
-installing Android Studio to a live Play Store app, in order, in plain English.
+## 📖 Step-by-step guides
+- **[`_docs/BUILD_AND_PUBLISH.md`](_docs/BUILD_AND_PUBLISH.md)** — install Android Studio → run the app → publish, in plain English.
+- **[`_docs/ADMOB_AND_PUBLISH.md`](_docs/ADMOB_AND_PUBLISH.md)** — full AdMob setup (account, ad units, consent, where to paste IDs) + Play Console account + billing product + signing + listing + publish.
 
 ## What only you (the owner) can do
 These need your accounts/hardware — I can't do them from here (all detailed in the guide above):
